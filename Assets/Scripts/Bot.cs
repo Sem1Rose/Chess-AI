@@ -49,6 +49,6 @@ public class Bot : MonoBehaviour
         Board.selectedSquare = move;
         Board.capturedPiece = Board.capturing? Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value : null;
 
-        MovingHandler.Move();
+        MovingHandler.HandleMovement();
     }
 }

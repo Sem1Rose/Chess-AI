@@ -5,7 +5,16 @@ using System.Linq;
 
 public static class Essentials
 {
-    static readonly int[,] directions = new int[8, 2] { { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 }, { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } };
+    static readonly int[,] directions = new int[8, 2] { 
+        { 0, 1 },   //UP
+        { 0, -1 },  //DOWN
+        { 1, 0 },   //RIGHT
+        { -1, 0 },  //LEFT
+        { 1, 1 },   //UP-RIGHT
+        { -1, 1 },  //UP-LEFT
+        { 1, -1 },  //DOWN-RIGHT
+        { -1, -1 }  //DOWN-LEFT
+    };
 
     public static FENReading ReadFEN(string FEN)
     {
@@ -110,7 +119,10 @@ public static class Essentials
         bool white = CheckColor(selectedPiece, ChessPieceTypes.White);
         int[] bounds = new int[4]
         {
-            7 - selectedPiece.position[1], selectedPiece.position[1], 7 - selectedPiece.position[0], selectedPiece.position[0]
+            7 - selectedPiece.position[1],  //UP
+            selectedPiece.position[1],      //DOWN
+            7 - selectedPiece.position[0],  //RIGHT
+            selectedPiece.position[0]       //LEFT
         };
 
         List<int[]> generatedMoves = new List<int[]>();
@@ -118,32 +130,19 @@ public static class Essentials
         switch (GetType(selectedPiece))
         {
             case ChessPieceTypes.Pawn:
-                if (!selectedPiece.moved)
+                for (int i = 1; i <= (selectedPiece.moved? 1 : 2); i++)
                 {
-                    for (int i = 1; i <= 2; i++)
+                    if((white? bounds[0] : bounds[1]) >= i)
                     {
-                        if((white? bounds[0] : bounds[1]) >= i)
-                        {
-                            int[] move = Move(selectedPiece.position, white ? 0 : 1, i);
+                        int[] move = Move(selectedPiece.position, white ? 0 : 1, i);
 
-                            if (Board.board.Any(x => x.Key.SequenceEqual(move)))
-                                break;
+                        if (Board.board.Any(x => x.Key.SequenceEqual(move)))
+                            break;
 
-                            generatedMoves.Add(move);
-                        }
+                        generatedMoves.Add(move);
                     }
                 }
-                else
-                {
-                    if((white? bounds[0] : bounds[1]) >= 1)
-                    {
-                        int[] move = Move(selectedPiece.position, white ? 0 : 1);
-
-                        if (!Board.board.Any(x => x.Key.SequenceEqual(move)))
-                            generatedMoves.Add(move);
-                    }
-                }
-
+                
                 int[] pos = new int[2] { selectedPiece.position[0], selectedPiece.position[1] + (white ? 1 : -1) };
                 for (int i = 0; i < 2; i++)
                 {
@@ -158,11 +157,10 @@ public static class Essentials
                         generatedMoves.Add(move);
                     }
                 }
-
                 break;
 
             case ChessPieceTypes.king:
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 2; i++) //UP and DOWN squares
                 {
                     if (bounds[i] >= 1)
                     {
@@ -171,15 +169,40 @@ public static class Essentials
                         if (Board.board.Any(x => x.Key.SequenceEqual(move)))
                         {
                             if (!CheckColor(Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value, GetColor(selectedPiece)))
-                            {
                                 generatedMoves.Add(move);
-                            }
                         }
                         else
                             generatedMoves.Add(move);
                     }
                 }
-                for (int i = 0; i < 2; i++)
+                for (int i = 2; i < 4; i++) //RIGHT and LEFT Squares
+                {
+                    if (bounds[i] >= 1)
+                    {
+                        int[] move = Move(selectedPiece.position, i);
+
+                        if (Board.board.Any(x => x.Key.SequenceEqual(move)))
+                        {
+                            if (!CheckColor(Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value, GetColor(selectedPiece)))
+                                generatedMoves.Add(move);
+                        }
+                        else
+                        {
+                            generatedMoves.Add(move);
+
+                            if(!selectedPiece.moved && bounds[i] >= 2 && selectedPiece.position[1] == (CheckColor(selectedPiece, ChessPieceTypes.White)? 0 : 7))
+                            {
+                                move = Move(selectedPiece.position, i, 2);
+                                Piece castlingRook = Board.board.FirstOrDefault(x => x.Key.SequenceEqual(new int[2]{(i == 2? 7 : 0), (Essentials.CheckColor(Board.selectedPiece, ChessPieceTypes.White)? 0 : 7)})).Value;
+
+                                if (!Board.board.Any(x => x.Key.SequenceEqual(move)) && castlingRook != null && !castlingRook.moved)
+                                    generatedMoves.Add(move);    
+
+                            }
+                        }
+                    }
+                }
+                for (int i = 0; i < 2; i++) //Diagonal Squares
                 {
                     for (int j = 0; j < 2; j++)
                     {
@@ -190,9 +213,7 @@ public static class Essentials
                             if (Board.board.Any(x => x.Key.SequenceEqual(move)))
                             {
                                 if (!CheckColor(Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value, GetColor(selectedPiece)))
-                                {
                                     generatedMoves.Add(move);
-                                }
                             }
                             else
                                 generatedMoves.Add(move);

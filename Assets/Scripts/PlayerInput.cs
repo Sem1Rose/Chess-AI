@@ -55,7 +55,7 @@ public class PlayerInput : MonoBehaviour
 
                 GraphicsHandler.handler.ResetBoard();
             }
-            MovingHandler.Move();
+            MovingHandler.HandleMovement();
         }
     }
 }
