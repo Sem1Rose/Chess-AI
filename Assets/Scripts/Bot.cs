@@ -20,7 +20,7 @@ public class Bot : MonoBehaviour
         int numMoves = 0;
         for (int i = 0; i < pieces.Length; i++)
         {
-            List<int[]> pieceMoves = Essentials.GenerateMoves(pieces[i]);
+            List<int[]> pieceMoves = Essentials.GeneratePseudoLegalMoves(pieces[i]);
             numMoves = Mathf.Max(numMoves, pieceMoves.Count);
             moves.Add(pieceMoves.ToArray());
         }

@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MovingHandler : MonoBehaviour
 {
+    #region Singleton
     public static MovingHandler handler = null;
 
     void Awake()
@@ -12,12 +13,12 @@ public class MovingHandler : MonoBehaviour
             Debug.LogError("More than one Moving handler in the scene!", gameObject);
         handler = this;
     }
-
+    #endregion
     public static void HandleMovement()
     {
         if (Board.selectedPiece != null && Board.selectedSquare != null && !Board.capturing)
         {
-            List<int[]> moves = Essentials.GenerateMoves(Board.selectedPiece);
+            List<int[]> moves = Essentials.GeneratePseudoLegalMoves(Board.selectedPiece);
 
             if (moves.Any(x => x.SequenceEqual(Board.selectedSquare)))
             {
@@ -36,10 +37,11 @@ public class MovingHandler : MonoBehaviour
 
             Board.selectedPiece = null;
             Board.selectedSquare = null;
+            Debug.Log(Essentials.InCheck(Board.turnToMove));
         }
         else if (Board.selectedPiece != null && Board.selectedSquare != null && Board.capturing)
         {
-            List<int[]> moves = Essentials.GenerateMoves(Board.selectedPiece);
+            List<int[]> moves = Essentials.GeneratePseudoLegalMoves(Board.selectedPiece);
 
             Board.enPassantSquare = null;
             Board.enPassantPiece = null;
@@ -61,6 +63,7 @@ public class MovingHandler : MonoBehaviour
             Board.selectedSquare = null;
             Board.capturedPiece = null;
             Board.capturing = false;
+            Debug.Log(Essentials.InCheck(Board.turnToMove));
         }
     }
 

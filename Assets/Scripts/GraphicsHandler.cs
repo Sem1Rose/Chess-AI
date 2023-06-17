@@ -1,6 +1,4 @@
 using UnityEngine;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 
 public class GraphicsHandler : MonoBehaviour
@@ -21,7 +19,7 @@ public class GraphicsHandler : MonoBehaviour
         PvP, PvB, BvB
     }
     
-    const string FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    public string FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     GameObject[] squares;
 
     private void Awake()
@@ -50,7 +48,7 @@ public class GraphicsHandler : MonoBehaviour
     }
 
     public void HighlightMove(){
-        int[][] moves = Essentials.GenerateMoves(Board.selectedPiece).ToArray();
+        int[][] moves = Essentials.GeneratePseudoLegalMoves(Board.selectedPiece).ToArray();
 
         for (int i = 0; i < moves.GetLength(0); i++)
         {

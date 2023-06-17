@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +7,16 @@ public static class Board
     public static Dictionary<int[], Piece> board = new Dictionary<int[], Piece>();
     public static List<Piece> pieces = new List<Piece>();
 
+    public static Piece whiteKing{
+        get{
+            return pieces.FirstOrDefault(x => (x.type == (ChessPieceTypes.king | ChessPieceTypes.White)));
+        }
+    }
+    public static Piece blackKing{
+        get{
+            return pieces.FirstOrDefault(x => (x.type == (ChessPieceTypes.king | ChessPieceTypes.Black)));
+        }
+    }
     public static Piece selectedPiece = null;
     public static Piece capturedPiece = null;
     public static Piece enPassantPiece = null;
@@ -60,16 +71,16 @@ public class FENReading
     public int turn;
     public string castling;
     public int[] enPassantTS;
-    public int halfmoveC;
-    public int fullmoveC;
+    public int halfMoveC;
+    public int fullMoveC;
 
-    public FENReading(List<Piece> pieces, int turn, string castling, int[] enPassantTS, int halfmoveC, int fullmoveC)
+    public FENReading(List<Piece> pieces, int turn, string castling, int[] enPassantTS, int halfMoveC, int fullMoveC)
     {
         this.pieces = pieces;
         this.turn = turn;
         this.castling = castling;
         this.enPassantTS = enPassantTS;
-        this.halfmoveC = halfmoveC;
-        this.fullmoveC = fullmoveC;
+        this.halfMoveC = halfMoveC;
+        this.fullMoveC = fullMoveC;
     }
 }
