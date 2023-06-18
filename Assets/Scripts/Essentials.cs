@@ -5,7 +5,7 @@ using System.Linq;
 
 public static class Essentials
 {
-    static readonly int[,] directions = new int[8, 2] { 
+    static readonly int[,] directions = new int[8, 2] {
         { 0, 1 },   //UP
         { 0, -1 },  //DOWN
         { 1, 0 },   //RIGHT
@@ -45,11 +45,15 @@ public static class Essentials
                 switch (rank[j])
                 {
                     case 'p':
-                        pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.Pawn, new int[2]{fileN, rankN}));
+                        pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.Pawn, new int[2] { fileN, rankN }, rankN == 6 ? false : true));
+                        fileN++;
+                        break;
+                    case 'k':
+                        pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.king, new int[2] { fileN, rankN }, (rankN == 7 || fileN == 4) ? false : true));
                         fileN++;
                         break;
                     case 'r':
-                        pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.Rook, new int[2] { fileN, rankN }));
+                        pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.Rook, new int[2] { fileN, rankN }, (rankN == 7 || (fileN == 0 || fileN == 7)) ? false : true));
                         fileN++;
                         break;
                     case 'n':
@@ -64,16 +68,16 @@ public static class Essentials
                         pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.Queen, new int[2] { fileN, rankN }));
                         fileN++;
                         break;
-                    case 'k':
-                        pieces.Add(new Piece(ChessPieceTypes.Black | ChessPieceTypes.king, new int[2] { fileN, rankN }));
+                    case 'P':
+                        pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.Pawn, new int[2] { fileN, rankN }, (rankN == 1) ? false : true));
                         fileN++;
                         break;
-                    case 'P':
-                        pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.Pawn, new int[2] { fileN, rankN }));
+                    case 'K':
+                        pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.king, new int[2] { fileN, rankN }, (rankN == 0 || fileN == 4) ? false : true));
                         fileN++;
                         break;
                     case 'R':
-                        pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.Rook, new int[2] { fileN, rankN }));
+                        pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.Rook, new int[2] { fileN, rankN }, (rankN == 0 || (fileN == 0 || fileN == 7)) ? false : true));
                         fileN++;
                         break;
                     case 'N':
@@ -88,17 +92,47 @@ public static class Essentials
                         pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.Queen, new int[2] { fileN, rankN }));
                         fileN++;
                         break;
-                    case 'K':
-                        pieces.Add(new Piece(ChessPieceTypes.White | ChessPieceTypes.king, new int[2] { fileN, rankN }));
-                        fileN++;
-                        break;
+
                     default:
                         break;
                 }
             }
         }
 
-        return new FENReading(pieces, split[1] == "w" ? ChessPieceTypes.White : ChessPieceTypes.Black, split[2], split[3] != "-" ? DecodePosition(split[3]) : null, int.Parse(split[4]), int.Parse(split[5]));
+        bool[] whiteCastlingRights = new bool[2] { false, false };
+        bool[] blackCastlingRights = new bool[2] { false, false };
+
+        char[] castling = split[2].ToCharArray();
+        for (int i = 0; i < castling.Length; i++)
+        {
+            switch (castling[i])
+            {
+                case 'K':
+                    whiteCastlingRights[0] = true;
+                    break;
+                case 'Q':
+                    whiteCastlingRights[1] = true;
+                    break;
+                case 'k':
+                    blackCastlingRights[0] = true;
+                    break;
+                case 'q':
+                    blackCastlingRights[1] = true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        int[] enPassantTS = null;
+        if (split[3] != "-")
+        {
+            enPassantTS = DecodePosition(split[3]);
+            Board.enPassantPiece = pieces.FirstOrDefault(x => x.position.SequenceEqual(Move(enPassantTS, (enPassantTS[1] == 5 ? 1 : 0))));
+        }
+
+        return new FENReading(pieces, split[1] == "w" ? ChessPieceTypes.White : ChessPieceTypes.Black, whiteCastlingRights, blackCastlingRights, enPassantTS, int.Parse(split[4]), int.Parse(split[5]));
     }
 
     public static string GetPosition(int file, int rank) => ((char)(file + 65)).ToString().ToLower() + (rank + 1).ToString();
@@ -106,7 +140,7 @@ public static class Essentials
     {
         int file, rank;
         char[] pos = position.ToUpper().ToCharArray();
-        
+
         file = pos[0] - 65;
         rank = int.Parse(pos[1].ToString()) - 1;
 
@@ -118,8 +152,10 @@ public static class Essentials
         bool white = color == ChessPieceTypes.White;
 
         HashSet<int[]> generatedMoves = new HashSet<int[]>();
-        
+
         Piece[] availablePieces = Board.pieces.FindAll(x => CheckColor(x, color)).ToArray();
+
+        Board.checkPieces.Clear();
 
         for (int l = 0; l < availablePieces.Length; l++)
         {
@@ -136,18 +172,21 @@ public static class Essentials
             switch (GetType(selectedPiece))
             {
                 case ChessPieceTypes.Pawn:
-                    if(bounds[(white? 0 : 1)] > 0)
+                    if (bounds[(white ? 0 : 1)] > 0)
                     {
-                        int[] pos = new int[2] { selectedPiece.position[0], selectedPiece.position[1] + (white? 1 : -1) };
+                        int[] pos = new int[2] { selectedPiece.position[0], selectedPiece.position[1] + (white ? 1 : -1) };
 
                         for (int i = 0; i < 2; i++)
                         {
-                            if(bounds[2 + i] > 0)
+                            if (bounds[2 + i] > 0)
                             {
                                 int[] move = Move(pos, i + 2);
 
-                                if (!generatedMoves.Contains(move)) 
+                                if (!generatedMoves.Contains(move))
                                     generatedMoves.Add(move);
+
+                                if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                    Board.checkPieces.Add(selectedPiece);
                             }
                         }
                     }
@@ -160,7 +199,7 @@ public static class Essentials
                         {
                             int[] move = Move(selectedPiece.position, i);
 
-                            if(!generatedMoves.Contains(move))
+                            if (!generatedMoves.Contains(move))
                                 generatedMoves.Add(move);
                         }
                     }
@@ -170,7 +209,7 @@ public static class Essentials
                         {
                             int[] move = Move(selectedPiece.position, i);
 
-                            if(!generatedMoves.Contains(move))
+                            if (!generatedMoves.Contains(move))
                             {
                                 generatedMoves.Add(move);
                             }
@@ -184,7 +223,7 @@ public static class Essentials
                             {
                                 int[] move = Move(selectedPiece.position, 4 + j + i * 2);
 
-                                if(!generatedMoves.Contains(move))
+                                if (!generatedMoves.Contains(move))
                                 {
                                     generatedMoves.Add(move);
                                 }
@@ -205,12 +244,17 @@ public static class Essentials
                                 if (Board.board.Any(x => x.Key.SequenceEqual(move) && !CheckType(x.Value, ChessPieceTypes.king)) && !generatedMoves.Contains(move))
                                 {
                                     generatedMoves.Add(move);
+                                    if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                        Board.checkPieces.Add(selectedPiece);
+
                                     break;
                                 }
 
-                                if(!generatedMoves.Contains(move))
+                                if (!generatedMoves.Contains(move))
                                 {
                                     generatedMoves.Add(move);
+                                    if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                        Board.checkPieces.Add(selectedPiece);
                                 }
                             }
                         }
@@ -227,12 +271,17 @@ public static class Essentials
                             if (Board.board.Any(x => x.Key.SequenceEqual(move) && !CheckType(x.Value, ChessPieceTypes.king)) && !generatedMoves.Contains(move))
                             {
                                 generatedMoves.Add(move);
+                                if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                    Board.checkPieces.Add(selectedPiece);
+
                                 break;
                             }
-                            
-                            if(!generatedMoves.Contains(move))
+
+                            if (!generatedMoves.Contains(move))
                             {
                                 generatedMoves.Add(move);
+                                if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                    Board.checkPieces.Add(selectedPiece);
                             }
                         }
                     }
@@ -248,12 +297,17 @@ public static class Essentials
                             if (Board.board.Any(x => x.Key.SequenceEqual(move) && !CheckType(x.Value, ChessPieceTypes.king)) && !generatedMoves.Contains(move))
                             {
                                 generatedMoves.Add(move);
+                                if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                    Board.checkPieces.Add(selectedPiece);
+
                                 break;
                             }
-                            
-                            if(!generatedMoves.Contains(move))
+
+                            if (!generatedMoves.Contains(move))
                             {
                                 generatedMoves.Add(move);
+                                if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                    Board.checkPieces.Add(selectedPiece);
                             }
                         }
                     }
@@ -268,12 +322,17 @@ public static class Essentials
                                 if (Board.board.Any(x => x.Key.SequenceEqual(move) && !CheckType(x.Value, ChessPieceTypes.king)) && !generatedMoves.Contains(move))
                                 {
                                     generatedMoves.Add(move);
+                                    if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                        Board.checkPieces.Add(selectedPiece);
+
                                     break;
                                 }
-                                
-                                if(!generatedMoves.Contains(move))
+
+                                if (!generatedMoves.Contains(move))
                                 {
                                     generatedMoves.Add(move);
+                                    if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                        Board.checkPieces.Add(selectedPiece);
                                 }
                             }
                         }
@@ -291,8 +350,12 @@ public static class Essentials
                             {
                                 int[] move = Move(startingPos, i + 2);
 
-                                if(!generatedMoves.Contains(move))
+                                if (!generatedMoves.Contains(move))
+                                {
                                     generatedMoves.Add(move);
+                                    if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                        Board.checkPieces.Add(selectedPiece);
+                                }
                             }
                         }
                     }
@@ -305,8 +368,12 @@ public static class Essentials
                             {
                                 int[] move = Move(startingPos, i);
 
-                                if(!generatedMoves.Contains(move))
+                                if (!generatedMoves.Contains(move))
+                                {
                                     generatedMoves.Add(move);
+                                    if (move.SequenceEqual((white ? Board.blackKing.position : Board.whiteKing.position)))
+                                        Board.checkPieces.Add(selectedPiece);
+                                }
                             }
                         }
                     }
@@ -314,17 +381,17 @@ public static class Essentials
 
                 default:
                     break;
-            }            
+            }
         }
         return generatedMoves;
-    }  
+    }
 
     public static List<int[]> GeneratePseudoLegalMoves(Piece selectedPiece, HashSet<int[]> threatMap = null)
     {
         bool white = CheckColor(selectedPiece, ChessPieceTypes.White);
 
-        if(threatMap == null)
-            threatMap = GenerateThreatMap(white? ChessPieceTypes.Black : ChessPieceTypes.White);
+        if (threatMap == null)
+            threatMap = GenerateThreatMap(white ? ChessPieceTypes.Black : ChessPieceTypes.White);
 
         int[] bounds = new int[4]
         {
@@ -339,9 +406,9 @@ public static class Essentials
         switch (GetType(selectedPiece))
         {
             case ChessPieceTypes.Pawn:
-                for (int i = 1; i <= (selectedPiece.moved? 1 : 2); i++)
+                for (int i = 1; i <= (selectedPiece.moved ? 1 : 2); i++)
                 {
-                    if((white? bounds[0] : bounds[1]) >= i)
+                    if ((white ? bounds[0] : bounds[1]) >= i)
                     {
                         int[] move = Move(selectedPiece.position, white ? 0 : 1, i);
 
@@ -351,18 +418,18 @@ public static class Essentials
                         generatedMoves.Add(move);
                     }
                 }
-                
+
                 int[] pos = new int[2] { selectedPiece.position[0], selectedPiece.position[1] + (white ? 1 : -1) };
-                if(bounds[(white? 0 : 1)] > 0)
+                if (bounds[(white ? 0 : 1)] > 0)
                 {
                     for (int i = 0; i < 2; i++)
                     {
                         int[] move = Move(pos, i + 2);
-                        
-                        if(bounds[2 + i] > 0)
+
+                        if (bounds[2 + i] > 0)
                         {
-                            if (Board.board.Any(x => x.Key.SequenceEqual(move))) 
-                            { 
+                            if (Board.board.Any(x => x.Key.SequenceEqual(move)))
+                            {
                                 if (!CheckColor(Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value, GetColor(selectedPiece)))
                                     generatedMoves.Add(move);
                             }
@@ -381,7 +448,7 @@ public static class Essentials
                     if (bounds[i] >= 1)
                     {
                         int[] move = Move(selectedPiece.position, i);
-                        if(!threatMap.Any(x => x.SequenceEqual(move)))
+                        if (!threatMap.Any(x => x.SequenceEqual(move)))
                         {
                             if (Board.board.Any(x => x.Key.SequenceEqual(move)))
                             {
@@ -398,7 +465,7 @@ public static class Essentials
                     if (bounds[i] >= 1)
                     {
                         int[] move = Move(selectedPiece.position, i);
-                        if(!threatMap.Any(x => x.SequenceEqual(move)))
+                        if (!threatMap.Any(x => x.SequenceEqual(move)))
                         {
                             if (Board.board.Any(x => x.Key.SequenceEqual(move)))
                             {
@@ -410,24 +477,23 @@ public static class Essentials
                                 generatedMoves.Add(move);
 
                                 // CASTLING
-                                if(!InCheck(GetColor(selectedPiece), threatMap) && !selectedPiece.moved && bounds[i] >= 2 && selectedPiece.position[1] == (CheckColor(selectedPiece, ChessPieceTypes.White)? 0 : 7))
+                                if (!InCheck(GetColor(selectedPiece)) && !selectedPiece.moved && (white ? Board.whiteCastlingRights[i - 2] : Board.blackCastlingRights[i - 2]))
                                 {
                                     move = Move(selectedPiece.position, i, 2);
 
-                                    if(!threatMap.Any(x => x.SequenceEqual(move)))
+                                    if (!threatMap.Any(x => x.SequenceEqual(move)))
                                     {
-                                        Piece castlingRook = Board.board.FirstOrDefault(x => x.Key.SequenceEqual(new int[2]{(i == 2? 7 : 0), (Essentials.CheckColor(Board.selectedPiece, ChessPieceTypes.White)? 0 : 7)})).Value;
-
+                                        Piece castlingRook = Board.board.FirstOrDefault(x => x.Key.SequenceEqual(new int[2] { (i == 2 ? 7 : 0), (Essentials.CheckColor(Board.selectedPiece, ChessPieceTypes.White) ? 0 : 7) })).Value;
                                         if (!Board.board.Any(x => x.Key.SequenceEqual(move)) && castlingRook != null && !castlingRook.moved)
                                         {
-                                            if(i == 3)
+                                            if (i == 3)
                                             {
-                                                if(!threatMap.Contains(Move(move, i)) && !Board.board.Any(x => x.Key.SequenceEqual(Move(move, i))))
-                                                    generatedMoves.Add(move);    
+                                                if (!threatMap.Contains(Move(move, i)) && !Board.board.Any(x => x.Key.SequenceEqual(Move(move, i))))
+                                                    generatedMoves.Add(move);
                                             }
                                             else
-                                                generatedMoves.Add(move);    
-                                        }   
+                                                generatedMoves.Add(move);
+                                        }
                                     }
                                 }
                             }
@@ -441,7 +507,7 @@ public static class Essentials
                         if (Mathf.Min(bounds[i], bounds[j + 2]) >= 1)
                         {
                             int[] move = Move(selectedPiece.position, 4 + j + i * 2);
-                            if(!threatMap.Any(x => x.SequenceEqual(move)))
+                            if (!threatMap.Any(x => x.SequenceEqual(move)))
                             {
                                 if (Board.board.Any(x => x.Key.SequenceEqual(move)))
                                 {
@@ -508,7 +574,7 @@ public static class Essentials
                     {
                         int[] move = Move(selectedPiece.position, j, i);
 
-                        if (Board.board.Any(x => x.Key.SequenceEqual(move)  ))
+                        if (Board.board.Any(x => x.Key.SequenceEqual(move)))
                         {
                             if (!CheckColor(Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value, GetColor(selectedPiece)))
                             {
@@ -560,7 +626,8 @@ public static class Essentials
                                 {
                                     generatedMoves.Add(move);
                                 }
-                            }else
+                            }
+                            else
                                 generatedMoves.Add(move);
 
                         }
@@ -595,11 +662,37 @@ public static class Essentials
         return generatedMoves;
     }
 
-    public static bool InCheck(int color, HashSet<int[]> threatMap = null) => (threatMap == null? GenerateThreatMap(color == ChessPieceTypes.White? ChessPieceTypes.Black : ChessPieceTypes.White).Any(x => x.SequenceEqual(color == ChessPieceTypes.White? Board.whiteKing.position : Board.blackKing.position)) : threatMap.Any(x => x.SequenceEqual(color == ChessPieceTypes.White? Board.whiteKing.position : Board.blackKing.position)));
+    public static List<int[]> GenerateLegalMoves(Piece selectedPiece)
+    {
+        Debug.Log("generating");
+        bool white = CheckColor(selectedPiece, ChessPieceTypes.White);
+
+        HashSet<int[]> threatMap = GenerateThreatMap(white ? ChessPieceTypes.Black : ChessPieceTypes.White);
+        List<int[]> pseudoLegalMoves = GeneratePseudoLegalMoves(selectedPiece, threatMap);
+
+        List<int[]> legalMoves = new List<int[]>();
+
+        for (int i = 0; i < pseudoLegalMoves.Count; i++)
+        {
+            Move move = MovingHandler.MakeMove(ref selectedPiece, pseudoLegalMoves[i], ref Board.enPassantPiece, ref Board.enPassantSquare, ref Board.capturing, ref Board.capturedPiece, ref Board.board, ref Board.pieces, false);
+
+            if (!InCheck(GetColor(selectedPiece)))
+            {
+                Debug.Log(pseudoLegalMoves[i][0] + " " + pseudoLegalMoves[i][1]);
+                MovingHandler.ApplyMove(MovingHandler.UndoMove(move, false));
+            }
+
+            legalMoves.Add(pseudoLegalMoves[i]);
+        }
+        return legalMoves;
+    }
+
+    //public static bool InCheck(int color, HashSet<int[]> threatMap = null) => (threatMap == null ? GenerateThreatMap(color == ChessPieceTypes.White ? ChessPieceTypes.Black : ChessPieceTypes.White).Any(x => x.SequenceEqual(color == ChessPieceTypes.White ? Board.whiteKing.position : Board.blackKing.position)) : threatMap.Any(x => x.SequenceEqual(color == ChessPieceTypes.White ? Board.whiteKing.position : Board.blackKing.position)));
+    public static bool InCheck(int color) { GenerateThreatMap(color == ChessPieceTypes.White ? ChessPieceTypes.Black : ChessPieceTypes.White); return Board.checkPieces.Count > 0; }
 
     public static int GetType(Piece piece) => piece.type & 7;
     public static int GetColor(Piece piece) => piece.type & 24;
-    
+
     public static bool CheckType(Piece piece, int type) => GetType(piece) == type;
     public static bool CheckColor(Piece piece, int color) => GetColor(piece) == color;
 

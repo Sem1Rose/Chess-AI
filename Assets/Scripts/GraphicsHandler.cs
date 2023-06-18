@@ -14,17 +14,17 @@ public class GraphicsHandler : MonoBehaviour
     public float squareSize = 1f;
     public GameObject[] piecesPrefabs;
 
-    public enum gameModes 
+    public enum gameModes
     {
         PvP, PvB, BvB
     }
-    
+
     public string FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     GameObject[] squares;
 
     private void Awake()
     {
-        if(handler != null)
+        if (handler != null)
             Debug.LogError("More than one Graphic handler in the scene!", gameObject);
         handler = this;
     }
@@ -36,7 +36,8 @@ public class GraphicsHandler : MonoBehaviour
         CreatePieces();
     }
 
-    public void ResetBoard(){
+    public void ResetBoard()
+    {
         for (int i = 0; i < squares.Length; i++)
         {
             if (squares[i] == null)
@@ -47,8 +48,9 @@ public class GraphicsHandler : MonoBehaviour
         }
     }
 
-    public void HighlightMove(){
-        int[][] moves = Essentials.GeneratePseudoLegalMoves(Board.selectedPiece).ToArray();
+    public void HighlightMove()
+    {
+        int[][] moves = Essentials.GenerateLegalMoves(Board.selectedPiece).ToArray();
 
         for (int i = 0; i < moves.GetLength(0); i++)
         {
@@ -61,16 +63,36 @@ public class GraphicsHandler : MonoBehaviour
 
     public void MovePiece(int[] from, int[] to) => Board.pieces.FirstOrDefault(x => x.position == from).gameobject.transform.position = new Vector3((to[0] - 3.5f) * squareSize, (to[1] - 3.5f) * squareSize, 0f);
 
-    public GameObject UpgradeSelectedPiece(int newPiece)
+    public void UpgradePiece(Piece oldPiece, Piece newPiece, int newType)
     {
-        int pieceType = newPiece;
-        int pieceColor = Board.selectedPiece.type & 24;
-        int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White? 0 : 1) - 1;
-        int[] pos = Board.selectedPiece.position;
+        int pieceType = newType;
+        int pieceColor = Essentials.GetColor(newPiece);
+        int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White ? 0 : 1) - 1;
+        int[] pos = newPiece.position;
 
-        Destroy(Board.selectedPiece.gameobject);
-        
-        return Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
+        Destroy(oldPiece.gameobject);
+
+        GameObject newPieceObject = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
+        newPiece.gameobject = newPieceObject;
+        newPieceObject.GetComponent<ChessPiece>().identity = newPiece;
+
+        Board.board.FirstOrDefault(x => x.Key.SequenceEqual(newPiece.position)).Value.gameobject = newPieceObject;
+        Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(newPiece.position)).gameobject = newPieceObject;
+    }
+
+    public void MakePiece(Piece piece)
+    {
+        int pieceType = Essentials.GetType(piece);
+        int pieceColor = Essentials.GetColor(piece);
+        int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White ? 0 : 1) - 1;
+        int[] pos = piece.position;
+
+        GameObject newPieceObject = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
+        piece.gameobject = newPieceObject;
+        newPieceObject.GetComponent<ChessPiece>().identity = piece;
+
+        Board.board.FirstOrDefault(x => x.Key.SequenceEqual(piece.position)).Value.gameobject = newPieceObject;
+        Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(piece.position)).gameobject = newPieceObject;
     }
 
     void ReadFEN()
@@ -79,6 +101,8 @@ public class GraphicsHandler : MonoBehaviour
         Board.pieces = fen.pieces;
         Board.turnToMove = fen.turn;
         Board.enPassantSquare = fen.enPassantTS;
+        Board.whiteCastlingRights = fen.whiteCastlingRights;
+        Board.blackCastlingRights = fen.blackCastlingRights;
 
         for (int i = 0; i < Board.pieces.Count; i++)
         {
@@ -111,7 +135,7 @@ public class GraphicsHandler : MonoBehaviour
 
             int pieceType = Board.pieces[i].type & 7;
             int pieceColor = Board.pieces[i].type & 24;
-            int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White? 0 : 1) - 1;
+            int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White ? 0 : 1) - 1;
 
             var piece = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
             piece.GetComponent<ChessPiece>().identity = Board.pieces[i];

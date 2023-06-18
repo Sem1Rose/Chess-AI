@@ -1,4 +1,3 @@
-using System.Security.Cryptography.X509Certificates;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,25 +8,25 @@ public class Bot : MonoBehaviour
 
     void Update()
     {
-        if(GraphicsHandler.handler.gameMode == GraphicsHandler.gameModes.PvB && Board.turnToMove != ChessPieceTypes.Black && !zeroMoves)
+        if (GraphicsHandler.handler.gameMode == GraphicsHandler.gameModes.PvB && Board.turnToMove != ChessPieceTypes.Black && !zeroMoves)
             return;
-        else if(GraphicsHandler.handler.gameMode == GraphicsHandler.gameModes.PvP)
+        else if (GraphicsHandler.handler.gameMode == GraphicsHandler.gameModes.PvP)
             return;
-        
+
         Piece[] pieces = Board.pieces.FindAll(x => Essentials.CheckColor(x, ChessPieceTypes.Black)).ToArray();
         List<int[][]> moves = new List<int[][]>();
 
         int numMoves = 0;
         for (int i = 0; i < pieces.Length; i++)
         {
-            List<int[]> pieceMoves = Essentials.GeneratePseudoLegalMoves(pieces[i]);
+            List<int[]> pieceMoves = Essentials.GenerateLegalMoves(pieces[i]);
             numMoves = Mathf.Max(numMoves, pieceMoves.Count);
             moves.Add(pieceMoves.ToArray());
         }
 
         int[][][] movesA = moves.ToArray();
 
-        if(numMoves == 0)
+        if (numMoves == 0)
         {
             zeroMoves = true;
             return;
@@ -35,20 +34,22 @@ public class Bot : MonoBehaviour
 
         int rand1 = Random.Range(0, movesA.GetLength(0));
 
-        while(movesA[rand1].GetLength(0) == 0)
+        while (movesA[rand1].GetLength(0) == 0)
         {
             rand1 = Random.Range(0, movesA.GetLength(0));
         }
 
         int rand2 = Random.Range(0, movesA[rand1].GetLength(0));
 
-        int[] move = movesA[rand1][rand2];
+        int[] boardMove = movesA[rand1][rand2];
 
-        Board.capturing = Board.board.Any(x => x.Key.SequenceEqual(move));
+        Board.capturing = Board.board.Any(x => x.Key.SequenceEqual(boardMove));
         Board.selectedPiece = pieces[rand1];
-        Board.selectedSquare = move;
-        Board.capturedPiece = Board.capturing? Board.board.FirstOrDefault(x => x.Key.SequenceEqual(move)).Value : null;
+        Board.selectedSquare = boardMove;
+        Board.capturedPiece = Board.capturing ? Board.board.FirstOrDefault(x => x.Key.SequenceEqual(boardMove)).Value : null;
 
-        MovingHandler.HandleMovement();
+        Move move = MovingHandler.MakeMove(ref Board.selectedPiece, Board.selectedSquare, ref Board.enPassantPiece, ref Board.enPassantSquare, ref Board.capturing, ref Board.capturedPiece, ref Board.board, ref Board.pieces);
+        if (move != null)
+            Board.lastMove = move;
     }
 }

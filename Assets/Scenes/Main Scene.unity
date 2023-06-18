@@ -303,10 +303,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameMode: 0
   squarePrefab: {fileID: 8785896995557396365, guid: 97b3b26a2af24c6499714bfada6bdcbf, type: 3}
-  darkSquare: {r: 0.6509434, g: 0.29933763, b: 0.07062123, a: 1}
-  lightSquare: {r: 1, g: 0.8062008, b: 0.514151, a: 1}
-  highlightedDarkSquare: {r: 0, g: 0.16434276, b: 0.8117647, a: 1}
-  highlightedLightSquare: {r: 0.4292453, g: 0.78505063, b: 1, a: 1}
+  darkSquare: {r: 0, g: 0, b: 0, a: 1}
+  lightSquare: {r: 1, g: 1, b: 1, a: 1}
+  highlightedDarkSquare: {r: 0.087474346, g: 0, b: 1, a: 1}
+  highlightedLightSquare: {r: 0.3443396, g: 0.9696661, b: 1, a: 1}
   squareSize: 1
   piecesPrefabs:
   - {fileID: 7757510120451796157, guid: a332b93dffa085c4d847a7067ef6251c, type: 3}
@@ -321,7 +321,7 @@ MonoBehaviour:
   - {fileID: 7239649669907521927, guid: c9563083df84ae142bbf7ef65987eef8, type: 3}
   - {fileID: 4486411313493148626, guid: 7b357cb83d78af940818a88604802da5, type: 3}
   - {fileID: 7785490440346010945, guid: a9745505d9c0f6e47b856a7a8da63c75, type: 3}
-  FEN: 4k3/6N1/8/4R3/8/8/8/4K3 w - - 0 1
+  FEN: '8/8/2n5/Q3pk2/4b3/br6/3r1PK1/8 b - - 0 1 '
 --- !u!4 &697925982
 Transform:
   m_ObjectHideFlags: 0
