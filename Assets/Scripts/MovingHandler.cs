@@ -5,7 +5,7 @@ using UnityEngine;
 public class MovingHandler : MonoBehaviour
 {
     #region Singleton
-    public static MovingHandler handler = null;
+    public static MovingHandler handler;
 
     void Awake()
     {
@@ -15,7 +15,7 @@ public class MovingHandler : MonoBehaviour
     }
     #endregion
 
-    public static Move MakeMove(ref Piece selectedPiece, int[] moveTo, ref Piece enPassantPiece, ref int[] enPassantSquare, ref bool capturing, ref Piece capturedPiece, ref Dictionary<int[], Piece> board, ref List<Piece> pieces, bool updateGraphics = true)
+    public static Move MakeMove(ref Piece selectedPiece, int[] moveTo, ref Piece enPassantPiece, ref int[] enPassantSquare, ref bool capturing, ref Piece capturedPiece, ref Dictionary<int[], Piece> board, ref List<Piece> pieces, bool updateGraphics = true, List<int[]> generatedMoves = null)
     {
         Move move = null;
         int[] moveFrom;
@@ -28,7 +28,7 @@ public class MovingHandler : MonoBehaviour
 
         if (selectedPiece != null && moveTo != null && !capturing)
         {
-            List<int[]> moves = Essentials.GenerateLegalMoves(selectedPiece);
+            List<int[]> moves = generatedMoves != null ? generatedMoves : Board.generatedMoves;
 
             var temp1 = moveTo;
 
@@ -51,7 +51,7 @@ public class MovingHandler : MonoBehaviour
         }
         else if (selectedPiece != null && moveTo != null && capturing)
         {
-            List<int[]> moves = Essentials.GenerateLegalMoves(selectedPiece);
+            List<int[]> moves = generatedMoves != null ? generatedMoves : Board.generatedMoves;
 
             enPassantSquare = null;
             enPassantPiece = null;
@@ -64,7 +64,7 @@ public class MovingHandler : MonoBehaviour
                 pieces.Remove(pieces.FirstOrDefault(x => x == temp2));
                 board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(temp2.position)).Key);
                 if (updateGraphics)
-                    Destroy(capturedPiece.gameobject);
+                    Destroy(capturedPiece.pieceObject);
 
                 moveFrom = selectedPiece.position;
                 moved = selectedPiece.moved;
@@ -103,8 +103,7 @@ public class MovingHandler : MonoBehaviour
             var temp1 = enPassantPiece;
             pieces.Remove(pieces.FirstOrDefault(x => x == temp1));
             board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(temp1.position)).Key);
-            if (updateGraphics)
-                Destroy(enPassantPiece.gameobject);
+            Destroy(enPassantPiece.pieceObject);
             enPassant = true;
         }
 
@@ -179,7 +178,7 @@ public class MovingHandler : MonoBehaviour
         {
             undoMove.board.Add(move.capturedPiece.position, move.capturedPiece);
             undoMove.pieces.Add(move.capturedPiece);
-
+            Debug.Log(move.capturedPiece == null);
             if (updateGraphics)
                 GraphicsHandler.handler.MakePiece(move.capturedPiece);
         }
@@ -208,13 +207,11 @@ public class MovingHandler : MonoBehaviour
             move.pieces.Add(newPiece);
             move.board.Add(enPassantPos, newPiece);
 
-            if (updateGraphics)
-                GraphicsHandler.handler.MakePiece(newPiece);
+            GraphicsHandler.handler.MakePiece(newPiece);
         }
         if (move.castled)
         {
             bool kingSide = move.to[0] == 6;
-            Debug.Log(kingSide);
             bool white = Essentials.CheckColor(move.selectedPiece, ChessPieceTypes.White);
             int[] rookNewPos = new int[2] { (kingSide ? 7 : 0), (white ? 0 : 7) };
 
@@ -230,7 +227,7 @@ public class MovingHandler : MonoBehaviour
         Board.enPassantSquare = undoneMove.enPassantSquare;
         if (Board.enPassantSquare != null)
         {
-            Board.enPassantPiece = Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(Essentials.Move(undoneMove.enPassantSquare, (undoneMove.enPassantSquare[1] == 5 ? 1 : 0))));
+            Board.enPassantPiece = undoneMove.pieces.FirstOrDefault(x => x.position.SequenceEqual(Essentials.Move(undoneMove.enPassantSquare, (undoneMove.enPassantSquare[1] == 5 ? 1 : 0))));
         }
         Board.board = undoneMove.board;
         Board.pieces = undoneMove.pieces;

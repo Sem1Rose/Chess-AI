@@ -55,5 +55,23 @@
     "workbench.colorCustomizations": {
         "minimap.background": "#00000000",
         "scrollbar.shadow": "#00000000"
+    },
+    "[css]": {
+        "editor.suggest.insertMode": "insert"
+    },
+    "[scss]": {
+        "editor.suggest.insertMode": "insert"
+    },
+    "[less]": {
+        "editor.suggest.insertMode": "insert"
+    },
+    "[html]": {
+        "editor.suggest.insertMode": "insert"
+    },
+    "[handlebars]": {
+        "editor.suggest.insertMode": "insert"
+    },
+    "[json]": {
+        "editor.suggest.insertMode": "insert"
     }
 }

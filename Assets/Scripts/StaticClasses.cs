@@ -5,6 +5,9 @@ using UnityEngine;
 public static class Board
 {
     public static Move lastMove = null;
+    public static HashSet<int[]> playerThreatMap;
+    public static HashSet<int[]> opponentThreatMap;
+    public static List<int[]> generatedMoves;
     public static Dictionary<int[], Piece> board = new Dictionary<int[], Piece>();
     public static List<Piece> pieces = new List<Piece>();
     public static List<Piece> checkPieces = new List<Piece>();
@@ -43,13 +46,13 @@ public class Piece
     public int type;
     public int[] position;
     public bool moved;
-    public GameObject gameobject;
+    public GameObject pieceObject;
 
-    public Piece(int type, int[] position, GameObject gameobject, bool moved = false)
+    public Piece(int type, int[] position, GameObject pieceObject, bool moved = false)
     {
         this.type = type;
         this.position = position;
-        this.gameobject = gameobject;
+        this.pieceObject = pieceObject;
         this.moved = moved;
     }
     public Piece(int type, int[] position, bool moved = false)

@@ -38,11 +38,9 @@ public class PlayerInput : MonoBehaviour
                 Board.selectedSquare = null;
                 Board.capturing = false;
 
-                GraphicsHandler.handler.HighlightMove();
-                Essentials.ChangeTurn();
-                Essentials.GenerateThreatMap(Board.turnToMove);
-                Essentials.ChangeTurn();
-                Debug.Log(Board.checkPieces.Count);
+                Board.generatedMoves = MovesGenerator.GenerateLegalMoves(Board.selectedPiece);
+
+                GraphicsHandler.handler.HighlightMoves();
             }
             else if (hit.collider.gameObject.CompareTag("Piece") && !Essentials.CheckColor(hit.collider.gameObject.GetComponent<ChessPiece>().identity, Board.turnToMove))
             {
@@ -60,21 +58,15 @@ public class PlayerInput : MonoBehaviour
 
                 GraphicsHandler.handler.ResetBoard();
             }
-            Move move = MovingHandler.MakeMove(ref Board.selectedPiece, Board.selectedSquare, ref Board.enPassantPiece, ref Board.enPassantSquare, ref Board.capturing, ref Board.capturedPiece, ref Board.board, ref Board.pieces);
+            Move move = MovingHandler.MakeMove(ref Board.selectedPiece, Board.selectedSquare, ref Board.enPassantPiece, ref Board.enPassantSquare, ref Board.capturing, ref Board.capturedPiece, ref Board.board, ref Board.pieces, true);
 
             if (move != null)
                 Board.lastMove = move;
         }
         if (Input.GetKeyDown(KeyCode.Space) && Board.lastMove != null)
         {
-            Move undoneMove = MovingHandler.UndoMove(Board.lastMove, true);
-            Board.enPassantSquare = undoneMove.enPassantSquare;
-            if (Board.enPassantSquare != null)
-            {
-                Board.enPassantPiece = Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(Essentials.Move(undoneMove.enPassantSquare, (undoneMove.enPassantSquare[1] == 5 ? 1 : 0))));
-            }
-            Board.board = undoneMove.board;
-            Board.pieces = undoneMove.pieces;
+            MovingHandler.ApplyMove(MovingHandler.UndoMove(Board.lastMove, true));
+
             Board.lastMove = null;
         }
         if (Input.GetKeyDown(KeyCode.LeftControl))

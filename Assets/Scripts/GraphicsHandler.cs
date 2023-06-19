@@ -48,9 +48,9 @@ public class GraphicsHandler : MonoBehaviour
         }
     }
 
-    public void HighlightMove()
+    public void HighlightMoves()
     {
-        int[][] moves = Essentials.GenerateLegalMoves(Board.selectedPiece).ToArray();
+        int[][] moves = Board.generatedMoves.ToArray();
 
         for (int i = 0; i < moves.GetLength(0); i++)
         {
@@ -61,7 +61,7 @@ public class GraphicsHandler : MonoBehaviour
         }
     }
 
-    public void MovePiece(int[] from, int[] to) => Board.pieces.FirstOrDefault(x => x.position == from).gameobject.transform.position = new Vector3((to[0] - 3.5f) * squareSize, (to[1] - 3.5f) * squareSize, 0f);
+    public void MovePiece(int[] from, int[] to) => Board.pieces.FirstOrDefault(x => x.position == from).pieceObject.transform.position = new Vector3((to[0] - 3.5f) * squareSize, (to[1] - 3.5f) * squareSize, 0f);
 
     public void UpgradePiece(Piece oldPiece, Piece newPiece, int newType)
     {
@@ -70,14 +70,14 @@ public class GraphicsHandler : MonoBehaviour
         int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White ? 0 : 1) - 1;
         int[] pos = newPiece.position;
 
-        Destroy(oldPiece.gameobject);
+        Destroy(oldPiece.pieceObject);
 
         GameObject newPieceObject = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
-        newPiece.gameobject = newPieceObject;
+        newPiece.pieceObject = newPieceObject;
         newPieceObject.GetComponent<ChessPiece>().identity = newPiece;
 
-        Board.board.FirstOrDefault(x => x.Key.SequenceEqual(newPiece.position)).Value.gameobject = newPieceObject;
-        Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(newPiece.position)).gameobject = newPieceObject;
+        Board.board.FirstOrDefault(x => x.Key.SequenceEqual(newPiece.position)).Value.pieceObject = newPieceObject;
+        Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(newPiece.position)).pieceObject = newPieceObject;
     }
 
     public void MakePiece(Piece piece)
@@ -88,11 +88,11 @@ public class GraphicsHandler : MonoBehaviour
         int[] pos = piece.position;
 
         GameObject newPieceObject = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
-        piece.gameobject = newPieceObject;
+        piece.pieceObject = newPieceObject;
         newPieceObject.GetComponent<ChessPiece>().identity = piece;
 
-        Board.board.FirstOrDefault(x => x.Key.SequenceEqual(piece.position)).Value.gameobject = newPieceObject;
-        Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(piece.position)).gameobject = newPieceObject;
+        Board.board.FirstOrDefault(x => x.Key.SequenceEqual(piece.position)).Value.pieceObject = newPieceObject;
+        Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(piece.position)).pieceObject = newPieceObject;
     }
 
     void ReadFEN()
@@ -108,6 +108,9 @@ public class GraphicsHandler : MonoBehaviour
         {
             Board.board.Add(new int[2] { Board.pieces[i].position[0], Board.pieces[i].position[1] }, Board.pieces[i]);
         }
+
+        Board.playerThreatMap = MovesGenerator.GenerateThreatMap(false);
+        Board.opponentThreatMap = MovesGenerator.GenerateThreatMap();
     }
 
     void CreateBoard()
@@ -137,9 +140,12 @@ public class GraphicsHandler : MonoBehaviour
             int pieceColor = Board.pieces[i].type & 24;
             int index = pieceType + 6 * (pieceColor == ChessPieceTypes.White ? 0 : 1) - 1;
 
-            var piece = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
+            GameObject piece = Instantiate(piecesPrefabs[index], new Vector3((pos[0] - 3.5f) * squareSize, (pos[1] - 3.5f) * squareSize, 0f), Quaternion.identity, transform.GetChild(0));
             piece.GetComponent<ChessPiece>().identity = Board.pieces[i];
-            piece.GetComponent<ChessPiece>().identity.gameobject = Board.pieces[i].gameobject = piece;
+            piece.GetComponent<ChessPiece>().identity.pieceObject = Board.pieces[i].pieceObject = piece;
+
+            if (Board.enPassantSquare != null && Board.enPassantSquare.SequenceEqual(Board.pieces[i].position))
+                Board.enPassantPiece = Board.pieces[i];
         }
     }
 }

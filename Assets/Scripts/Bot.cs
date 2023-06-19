@@ -19,12 +19,10 @@ public class Bot : MonoBehaviour
         int numMoves = 0;
         for (int i = 0; i < pieces.Length; i++)
         {
-            List<int[]> pieceMoves = Essentials.GenerateLegalMoves(pieces[i]);
+            List<int[]> pieceMoves = MovesGenerator.GenerateLegalMoves(pieces[i]);
             numMoves = Mathf.Max(numMoves, pieceMoves.Count);
             moves.Add(pieceMoves.ToArray());
         }
-
-        int[][][] movesA = moves.ToArray();
 
         if (numMoves == 0)
         {
@@ -32,19 +30,19 @@ public class Bot : MonoBehaviour
             return;
         }
 
+        int[][][] movesA = moves.ToArray();
         int rand1 = Random.Range(0, movesA.GetLength(0));
 
         while (movesA[rand1].GetLength(0) == 0)
-        {
             rand1 = Random.Range(0, movesA.GetLength(0));
-        }
 
         int rand2 = Random.Range(0, movesA[rand1].GetLength(0));
 
         int[] boardMove = movesA[rand1][rand2];
 
-        Board.capturing = Board.board.Any(x => x.Key.SequenceEqual(boardMove));
+        Board.capturing = Board.board.Any(x => x.Key.SequenceEqual(boardMove)) && Essentials.CheckColor(Board.board.FirstOrDefault(x => x.Key.SequenceEqual(boardMove)).Value, Board.turnToMove);
         Board.selectedPiece = pieces[rand1];
+        Board.generatedMoves = MovesGenerator.GenerateLegalMoves(Board.selectedPiece);
         Board.selectedSquare = boardMove;
         Board.capturedPiece = Board.capturing ? Board.board.FirstOrDefault(x => x.Key.SequenceEqual(boardMove)).Value : null;
 

@@ -301,7 +301,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f2841b8ad2ee0043a530bda383efc60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameMode: 0
+  gameMode: 2
   squarePrefab: {fileID: 8785896995557396365, guid: 97b3b26a2af24c6499714bfada6bdcbf, type: 3}
   darkSquare: {r: 0, g: 0, b: 0, a: 1}
   lightSquare: {r: 1, g: 1, b: 1, a: 1}
@@ -321,7 +321,7 @@ MonoBehaviour:
   - {fileID: 7239649669907521927, guid: c9563083df84ae142bbf7ef65987eef8, type: 3}
   - {fileID: 4486411313493148626, guid: 7b357cb83d78af940818a88604802da5, type: 3}
   - {fileID: 7785490440346010945, guid: a9745505d9c0f6e47b856a7a8da63c75, type: 3}
-  FEN: '8/8/2n5/Q3pk2/4b3/br6/3r1PK1/8 b - - 0 1 '
+  FEN: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 '
 --- !u!4 &697925982
 Transform:
   m_ObjectHideFlags: 0
