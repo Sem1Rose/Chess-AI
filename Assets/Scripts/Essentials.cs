@@ -132,7 +132,7 @@ public static class Essentials
         return new FENReading(pieces, split[1] == "w" ? ChessPieceTypes.White : ChessPieceTypes.Black, whiteCastlingRights, blackCastlingRights, enPassantTS, int.Parse(split[4]), int.Parse(split[5]));
     }
 
-    public static string GetPosition(int file, int rank) => ((char)(file + 65)).ToString().ToLower() + (rank + 1).ToString();
+    public static string GetPosition(int[] pos) => ((char)(pos[0] + 65)).ToString().ToLower() + (pos[1] + 1).ToString();
     public static int[] DecodePosition(string position)
     {
         int file, rank;
@@ -144,8 +144,7 @@ public static class Essentials
         return new int[2] { file, rank };
     }
 
-    //public static bool InCheck(int color, HashSet<int[]> threatMap = null) => (threatMap == null ? GenerateThreatMap(color == ChessPieceTypes.White ? ChessPieceTypes.Black : ChessPieceTypes.White).Any(x => x.SequenceEqual(color == ChessPieceTypes.White ? Board.whiteKing.position : Board.blackKing.position)) : threatMap.Any(x => x.SequenceEqual(color == ChessPieceTypes.White ? Board.whiteKing.position : Board.blackKing.position)));
-    public static bool InCheck(bool opponent = false) { MovesGenerator.GenerateThreatMap(true, opponent); return Board.checkPieces.Count > 0; }
+    public static bool InCheck(bool opponent = false) { MovesGenerator.GenerateThreatMap(true, !opponent); return Board.checkPieces.Count > 0; }
 
     public static int GetType(Piece piece) => piece.type & 7;
     public static int GetColor(Piece piece) => piece.type & 24;
@@ -153,7 +152,7 @@ public static class Essentials
     public static bool CheckType(Piece piece, int type) => GetType(piece) == type;
     public static bool CheckColor(Piece piece, int color) => GetColor(piece) == color;
 
-    public static int[] Move(int[] startingPos, int dir, int times = 1) => new int[2] { startingPos[0] + directions[dir, 0] * times, startingPos[1] + directions[dir, 1] * times };
+    public static int[] Translate(int[] startingPos, int dir, int times = 1) => new int[2] { startingPos[0] + directions[dir, 0] * times, startingPos[1] + directions[dir, 1] * times };
 
     public static void ChangeTurn()
     {

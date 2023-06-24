@@ -15,199 +15,103 @@ public class MovingHandler : MonoBehaviour
     }
     #endregion
 
-    public static Move MakeMove(ref Piece selectedPiece, int[] moveTo, ref Piece enPassantPiece, ref int[] enPassantSquare, ref bool capturing, ref Piece capturedPiece, ref Dictionary<int[], Piece> board, ref List<Piece> pieces, bool updateGraphics = true, List<int[]> generatedMoves = null)
+    static bool upgraded, castled, enPassant;
+
+    public static Move MakeMove(Piece selectedPiece, int[] moveTo, bool updateGraphics = true)
     {
         Move move = null;
-        int[] moveFrom;
+
         bool moved;
-        bool castled = false;
-        Piece castlingRook = null;
-        bool enPassant = false;
-        int[] enPass = enPassantSquare;
-        bool upgraded = false;
+        int[] moveFrom;
+        int[] enPassantSquare = Board.enPassantSquare;
+        Piece selected = selectedPiece;
+        Piece enPassantPiece = Board.enPassantPiece;
+        List<Piece> pieces = Board.pieces;
 
-        if (selectedPiece != null && moveTo != null && !capturing)
+        if (selectedPiece != null && moveTo != null && !Board.capturing)
         {
-            List<int[]> moves = generatedMoves != null ? generatedMoves : Board.generatedMoves;
+            moveFrom = selectedPiece.position;
+            moved = selectedPiece.moved;
 
-            var temp1 = moveTo;
+            CheckKingCastling(selectedPiece, moveTo, updateGraphics);
+            selectedPiece = MovePiece(selectedPiece, moveTo, updateGraphics);
+            selectedPiece = CheckPawnUpgrade(selectedPiece, moveTo, updateGraphics);
+            CheckEnPassant(selectedPiece, moveTo, updateGraphics);
 
-            if (moves.Any(x => x.SequenceEqual(temp1)))
-            {
-                CheckEnPassant(ref selectedPiece, ref moveTo, ref enPassantPiece, ref enPassantSquare, ref board, ref pieces, updateGraphics, ref enPassant);
-                CheckPawnUpgrade(ref selectedPiece, ref moveTo, ref board, ref pieces, updateGraphics, ref upgraded);
-                CheckKingCastling(ref selectedPiece, ref moveTo, ref board, updateGraphics, ref castled, ref castlingRook);
+            Essentials.ChangeTurn();
 
-                moveFrom = selectedPiece.position;
-                moved = selectedPiece.moved;
-                MovePiece(ref selectedPiece, ref moveTo, ref board, updateGraphics);
-
-                Essentials.ChangeTurn();
-                move = new Move(selectedPiece, moveFrom, moveTo, moved, false, null, upgraded, enPassant, enPass, castled, castlingRook, board, pieces);
-            }
-
-            selectedPiece = null;
-            moveTo = null;
+            move = new Move(selected, moveFrom, moveTo, moved, false, null, upgraded, upgraded ? selectedPiece : null, enPassant, enPassantSquare, enPassantPiece, castled, Board.castlingRook, pieces);
         }
-        else if (selectedPiece != null && moveTo != null && capturing)
+        else if (selectedPiece != null && moveTo != null && Board.capturing)
         {
-            List<int[]> moves = generatedMoves != null ? generatedMoves : Board.generatedMoves;
+            Piece capturedPiece = Board.capturedPiece;
 
-            enPassantSquare = null;
-            enPassantPiece = null;
+            Board.enPassantSquare = null;
+            Board.enPassantPiece = null;
 
-            var temp1 = moveTo;
+            Board.pieces.Remove(Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(Board.capturedPiece.position)));
 
-            if (moves.Any(x => x.SequenceEqual(temp1)))
-            {
-                var temp2 = capturedPiece;
-                pieces.Remove(pieces.FirstOrDefault(x => x == temp2));
-                board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(temp2.position)).Key);
-                if (updateGraphics)
-                    Destroy(capturedPiece.pieceObject);
+            if (updateGraphics)
+                GraphicsHandler.handler.DestroyPiece(Board.capturedPiece.pieceObject);
 
-                moveFrom = selectedPiece.position;
-                moved = selectedPiece.moved;
-                MovePiece(ref selectedPiece, ref moveTo, ref board, updateGraphics);
+            selectedPiece = CheckPawnUpgrade(selectedPiece, moveTo, updateGraphics);
 
-                CheckPawnUpgrade(ref selectedPiece, ref moveTo, ref board, ref pieces, updateGraphics, ref upgraded);
+            moveFrom = selectedPiece.position;
+            moved = selectedPiece.moved;
+            selectedPiece = MovePiece(selectedPiece, moveTo, updateGraphics);
 
-                Essentials.ChangeTurn();
-                move = new Move(selectedPiece, moveFrom, moveTo, moved, capturing, capturedPiece, upgraded, false, null, false, null, board, pieces);
-            }
+            Essentials.ChangeTurn();
+            move = new Move(selected, moveFrom, moveTo, moved, Board.capturing, capturedPiece, upgraded, upgraded ? selectedPiece : null, false, enPassantSquare, enPassantPiece, false, null, pieces);
 
-            selectedPiece = null;
-            moveTo = null;
-            capturedPiece = null;
-            capturing = false;
+            Board.capturedPiece = null;
+            Board.capturing = false;
         }
+
         return move;
     }
 
-    static void MovePiece(ref Piece selectedPiece, ref int[] moveTo, ref Dictionary<int[], Piece> board, bool updateGraphics, bool moved = true)
+    static Piece MovePiece(Piece selectedPiece, int[] moveTo, bool updateGraphics, bool moved = true)
     {
+        Board.pieces.RemoveAll(x => x.position.SequenceEqual(selectedPiece.position));
+        selectedPiece.position = moveTo;
+        selectedPiece.moved = moved;
+        Board.pieces.Add(selectedPiece);
         if (updateGraphics)
             GraphicsHandler.handler.MovePiece(selectedPiece.position, moveTo);
 
-        var temp1 = selectedPiece;
-        board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(temp1.position)).Key);
-        selectedPiece.position = moveTo;
-        selectedPiece.moved = moved;
-        board.Add(moveTo, selectedPiece);
+        return selectedPiece;
     }
 
-    static void CheckEnPassant(ref Piece selectedPiece, ref int[] moveTo, ref Piece enPassantPiece, ref int[] enPassantSquare, ref Dictionary<int[], Piece> board, ref List<Piece> pieces, bool updateGraphics, ref bool enPassant)
-    {
-        if (enPassantSquare != null && moveTo.SequenceEqual(enPassantSquare))
-        {
-            var temp1 = enPassantPiece;
-            pieces.Remove(pieces.FirstOrDefault(x => x == temp1));
-            board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(temp1.position)).Key);
-            Destroy(enPassantPiece.pieceObject);
-            enPassant = true;
-        }
-
-        enPassantSquare = null;
-        enPassantPiece = null;
-
-        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.Pawn))
-        {
-            if (Mathf.Abs(selectedPiece.position[1] - moveTo[1]) == 2)
-            {
-                enPassantSquare = new int[2] { moveTo[0], selectedPiece.position[1] + (Essentials.CheckColor(selectedPiece, ChessPieceTypes.White) ? 1 : -1) };
-                enPassantPiece = selectedPiece;
-            }
-        }
-    }
-
-    static void CheckKingCastling(ref Piece selectedPiece, ref int[] moveTo, ref Dictionary<int[], Piece> board, bool updateGraphics, ref bool castled, ref Piece castlingRook)
-    {
-        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.king) && Mathf.Abs(selectedPiece.position[0] - moveTo[0]) == 2)
-        {
-            bool right = moveTo[0] - selectedPiece.position[0] == 2;
-            var temp1 = selectedPiece;
-            castlingRook = board.FirstOrDefault(x => x.Key.SequenceEqual(new int[2] { (right ? 7 : 0), (Essentials.CheckColor(temp1, ChessPieceTypes.White) ? 0 : 7) })).Value;
-
-            if (castlingRook != null)
-            {
-                castled = true;
-
-                int[] castlingSquare = new int[2] { selectedPiece.position[0] + (right ? 1 : -1), selectedPiece.position[1] };
-
-                if (updateGraphics)
-                    GraphicsHandler.handler.MovePiece(castlingRook.position, castlingSquare);
-
-                var temp = castlingRook;
-                board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(temp.position)).Key);
-                castlingRook.position = castlingSquare;
-                castlingRook.moved = true;
-                board.Add(castlingSquare, castlingRook);
-                castlingSquare = null;
-            }
-        }
-    }
-
-    static void CheckPawnUpgrade(ref Piece selectedPiece, ref int[] moveTo, ref Dictionary<int[], Piece> board, ref List<Piece> pieces, bool updateGraphics, ref bool upgraded)
-    {
-        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.Pawn) && moveTo[1] == (Essentials.CheckColor(selectedPiece, ChessPieceTypes.White) ? 7 : 0))
-        {
-            int newType = ChessPieceTypes.Queen;
-            Piece oldPiece = selectedPiece;
-
-            pieces.Remove(pieces.FirstOrDefault(x => x.position.SequenceEqual(oldPiece.position)));
-            board.Remove(board.FirstOrDefault(x => x.Key.SequenceEqual(oldPiece.position)).Key);
-
-            Piece newPiece = new Piece(Essentials.GetColor(oldPiece) | newType, oldPiece.position);
-            pieces.Add(newPiece);
-            board.Add(oldPiece.position, newPiece);
-            selectedPiece = newPiece;
-
-            if (updateGraphics)
-                GraphicsHandler.handler.UpgradePiece(oldPiece, newPiece, newType);
-            upgraded = true;
-        }
-    }
-    //Piece selectedPiece, int[] from, int[] to, bool capturing, Piece capturedPiece, bool upgraded, bool enPassant, int[] enPassantSquare, bool castled, Piece castlingRook, Dictionary<int[], Piece> board, List<Piece> pieces
     public static Move UndoMove(Move move, bool updateGraphics)
     {
-        Move undoMove = move;
+        move.selectedPiece = MovePiece(move.selectedPiece, move.from, updateGraphics, move.moved);
 
-        MovePiece(ref undoMove.selectedPiece, ref undoMove.from, ref undoMove.board, updateGraphics, move.moved);
-
-        if (move.capturing)
-        {
-            undoMove.board.Add(move.capturedPiece.position, move.capturedPiece);
-            undoMove.pieces.Add(move.capturedPiece);
-            Debug.Log(move.capturedPiece == null);
-            if (updateGraphics)
-                GraphicsHandler.handler.MakePiece(move.capturedPiece);
-        }
         if (move.upgraded)
         {
             int newType = ChessPieceTypes.Pawn;
-            Piece oldPiece = undoMove.selectedPiece;
+            Piece oldPiece = move.upgradedPiece;
 
-            undoMove.pieces.Remove(undoMove.pieces.FirstOrDefault(x => x == oldPiece));
-            undoMove.board.Remove(undoMove.board.FirstOrDefault(x => x.Key.SequenceEqual(oldPiece.position)).Key);
-
-            Piece newPiece = new Piece(Essentials.GetColor(oldPiece) | newType, undoMove.from);
-            undoMove.pieces.Add(newPiece);
-            undoMove.board.Add(undoMove.from, newPiece);
+            Board.pieces.RemoveAll(x => x.position.SequenceEqual(oldPiece.position));
+            Piece newPiece = new Piece(Essentials.GetColor(oldPiece) | newType, move.from);
+            Board.pieces.Add(newPiece);
 
             if (updateGraphics)
                 GraphicsHandler.handler.UpgradePiece(oldPiece, newPiece, newType);
         }
+        if (move.capturing)
+        {
+            Board.pieces.Add(move.capturedPiece);
+
+            if (updateGraphics)
+                GraphicsHandler.handler.MakePiece(move.capturedPiece);
+
+            Board.capturing = false;
+            Board.capturedPiece = null;
+        }
         if (move.enPassant)
         {
-            bool white = Essentials.CheckColor(move.selectedPiece, ChessPieceTypes.White);
-            int[] enPassantPos = Essentials.Move(move.enPassantSquare, white ? 1 : 0);
-
-            Piece newPiece = new Piece(ChessPieceTypes.Pawn | (white ? ChessPieceTypes.Black : ChessPieceTypes.White), enPassantPos, true);
-
-            move.pieces.Add(newPiece);
-            move.board.Add(enPassantPos, newPiece);
-
-            GraphicsHandler.handler.MakePiece(newPiece);
+            Board.pieces.Add(move.enPassantPiece);
+            GraphicsHandler.handler.MakePiece(move.enPassantPiece);
         }
         if (move.castled)
         {
@@ -215,21 +119,74 @@ public class MovingHandler : MonoBehaviour
             bool white = Essentials.CheckColor(move.selectedPiece, ChessPieceTypes.White);
             int[] rookNewPos = new int[2] { (kingSide ? 7 : 0), (white ? 0 : 7) };
 
-            MovePiece(ref move.castlingRook, ref rookNewPos, ref move.board, updateGraphics, false);
+            move.castlingRook = MovePiece(move.castlingRook, rookNewPos, updateGraphics, false);
         }
 
+        Board.enPassantSquare = move.enPassantSquare;
+        Board.enPassantPiece = move.enPassantPiece;
         Essentials.ChangeTurn();
-        return undoMove;
+
+        return move;
     }
 
-    public static void ApplyMove(Move undoneMove)
+    static Piece CheckPawnUpgrade(Piece selectedPiece, int[] moveTo, bool updateGraphics)
     {
-        Board.enPassantSquare = undoneMove.enPassantSquare;
-        if (Board.enPassantSquare != null)
+        upgraded = false;
+        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.Pawn) && moveTo[1] == (Essentials.CheckColor(selectedPiece, ChessPieceTypes.White) ? 7 : 0))
         {
-            Board.enPassantPiece = undoneMove.pieces.FirstOrDefault(x => x.position.SequenceEqual(Essentials.Move(undoneMove.enPassantSquare, (undoneMove.enPassantSquare[1] == 5 ? 1 : 0))));
+            int newType = ChessPieceTypes.Queen;
+            Piece oldPiece = selectedPiece;
+
+            Board.pieces.RemoveAll(x => x.position.SequenceEqual(oldPiece.position));
+            Piece newPiece = new Piece(Essentials.GetColor(oldPiece) | newType, oldPiece.position);
+            selectedPiece = newPiece;
+            Board.pieces.Add(selectedPiece);
+
+            if (updateGraphics)
+                GraphicsHandler.handler.UpgradePiece(oldPiece, newPiece, newType);
+
+            upgraded = true;
         }
-        Board.board = undoneMove.board;
-        Board.pieces = undoneMove.pieces;
+        return selectedPiece;
+    }
+
+    static void CheckEnPassant(Piece selectedPiece, int[] moveTo, bool updateGraphics)
+    {
+        enPassant = false;
+        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.Pawn) && Board.enPassantSquare != null && moveTo.SequenceEqual(Board.enPassantSquare))
+        {
+            Board.pieces.RemoveAll(x => x.position.SequenceEqual(Board.enPassantPiece.position));
+            GraphicsHandler.handler.DestroyPiece(Board.enPassantPiece.pieceObject);
+            enPassant = true;
+        }
+
+        Board.enPassantSquare = null;
+        Board.enPassantPiece = null;
+
+        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.Pawn))
+        {
+            if (Mathf.Abs(selectedPiece.position[1] - moveTo[1]) == 2)
+            {
+                Board.enPassantSquare = new int[2] { moveTo[0], selectedPiece.position[1] + (Essentials.CheckColor(selectedPiece, ChessPieceTypes.White) ? 1 : -1) };
+                Board.enPassantPiece = selectedPiece;
+            }
+        }
+    }
+
+    static void CheckKingCastling(Piece selectedPiece, int[] moveTo, bool updateGraphics)
+    {
+        castled = false;
+        if (Essentials.CheckType(selectedPiece, ChessPieceTypes.king) && Mathf.Abs(selectedPiece.position[0] - moveTo[0]) == 2)
+        {
+            bool right = moveTo[0] - selectedPiece.position[0] == 2;
+            Board.castlingRook = Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(new int[2] { (right ? 7 : 0), (Essentials.CheckColor(selectedPiece, ChessPieceTypes.White) ? 0 : 7) }));
+
+            if (Board.castlingRook != null)
+            {
+                int[] castlingSquare = new int[2] { selectedPiece.position[0] + (right ? 1 : -1), selectedPiece.position[1] };
+                Board.castlingRook = MovePiece(Board.castlingRook, castlingSquare, updateGraphics, updateGraphics);
+                castled = true;
+            }
+        }
     }
 }

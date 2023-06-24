@@ -308,20 +308,20 @@ MonoBehaviour:
   highlightedDarkSquare: {r: 0.087474346, g: 0, b: 1, a: 1}
   highlightedLightSquare: {r: 0.3443396, g: 0.9696661, b: 1, a: 1}
   squareSize: 1
-  piecesPrefabs:
-  - {fileID: 7757510120451796157, guid: a332b93dffa085c4d847a7067ef6251c, type: 3}
-  - {fileID: 1843769402764370609, guid: 9aa7a5d9bdfeaca4fa3dafd450a66d23, type: 3}
-  - {fileID: 5248939123410373904, guid: 4cd9d1ecbf4668e4c92fb748691d703b, type: 3}
-  - {fileID: 3902598477321340223, guid: 826636b036e20c7449518a64e7218bf1, type: 3}
-  - {fileID: 494736261342899882, guid: b319a19f9e0a5074cb6f9243b4a189fd, type: 3}
-  - {fileID: 751760009532240635, guid: 1dedc932bfdbf604faced776f97bb332, type: 3}
-  - {fileID: 1117650558171760232, guid: 1928bb57cfb676e489c380fc4c0068ca, type: 3}
-  - {fileID: 659822076904500896, guid: bcc14ffdcaff30044aa3b2373f2ae3d6, type: 3}
-  - {fileID: 7642276350781376318, guid: 78161793d4792264c87c98a4f0856e75, type: 3}
-  - {fileID: 7239649669907521927, guid: c9563083df84ae142bbf7ef65987eef8, type: 3}
-  - {fileID: 4486411313493148626, guid: 7b357cb83d78af940818a88604802da5, type: 3}
-  - {fileID: 7785490440346010945, guid: a9745505d9c0f6e47b856a7a8da63c75, type: 3}
-  FEN: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 '
+  piecesSprites:
+  - {fileID: -1684815029, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: 506158827, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: -2030981906, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: -1496826123, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: 424407221, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: 1233355694, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: 1047441025, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: -250075247, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: 707567518, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: -2003228544, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: -1587075000, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  - {fileID: -177522033, guid: 72530f5393bd42d4992a6be2c62aa8eb, type: 3}
+  FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 --- !u!4 &697925982
 Transform:
   m_ObjectHideFlags: 0

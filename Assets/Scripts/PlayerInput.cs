@@ -16,22 +16,16 @@ public class PlayerInput : MonoBehaviour
 
             if (hit.collider == null)
             {
-                if (Board.selectedPiece != null)
-                {
-                    GraphicsHandler.handler.ResetBoard();
-                }
+                GraphicsHandler.handler.ResetBoard();
 
-                Board.selectedSquare = null;
                 Board.selectedPiece = null;
-                Board.capturedPiece = null;
+                Board.selectedSquare = null;
                 Board.capturing = false;
+                Board.capturedPiece = null;
             }
             else if (hit.collider.gameObject.CompareTag("Piece") && Essentials.CheckColor(hit.collider.gameObject.GetComponent<ChessPiece>().identity, Board.turnToMove))
             {
-                if (Board.selectedPiece != null)
-                {
-                    GraphicsHandler.handler.ResetBoard();
-                }
+                GraphicsHandler.handler.ResetBoard();
 
                 Board.selectedPiece = hit.collider.gameObject.GetComponent<ChessPiece>().identity;
                 Board.capturedPiece = null;
@@ -44,33 +38,66 @@ public class PlayerInput : MonoBehaviour
             }
             else if (hit.collider.gameObject.CompareTag("Piece") && !Essentials.CheckColor(hit.collider.gameObject.GetComponent<ChessPiece>().identity, Board.turnToMove))
             {
-                Board.selectedSquare = hit.collider.gameObject.GetComponent<ChessPiece>().identity.position;
-                Board.capturedPiece = hit.collider.gameObject.GetComponent<ChessPiece>().identity;
-                Board.capturing = true;
+                Piece capture = hit.collider.gameObject.GetComponent<ChessPiece>().identity;
+                if (Board.selectedPiece != null && Board.generatedMoves.Any(x => x.SequenceEqual(capture.position)))
+                {
+                    Board.capturedPiece = capture;
+                    Board.selectedSquare = capture.position;
+                    Board.capturing = true;
+                }
+                else
+                {
+                    Board.selectedPiece = null;
+                    Board.selectedSquare = null;
+                    Board.capturing = false;
+                    Board.capturedPiece = null;
+                }
 
                 GraphicsHandler.handler.ResetBoard();
             }
             else if (hit.collider.gameObject.CompareTag("Square"))
             {
-                Board.selectedSquare = hit.collider.gameObject.GetComponent<ChessSquare>().pos;
-                Board.capturedPiece = null;
-                Board.capturing = false;
+                int[] selectedSquare = hit.collider.gameObject.GetComponent<ChessSquare>().pos;
+                if (Board.selectedPiece != null && Board.generatedMoves.Any(x => x.SequenceEqual(selectedSquare)))
+                {
+                    Board.selectedSquare = selectedSquare;
+                    Board.capturedPiece = null;
+                    Board.capturing = false;
+                }
+                else
+                {
+                    Board.selectedPiece = null;
+                    Board.selectedSquare = null;
+                    Board.capturing = false;
+                    Board.capturedPiece = null;
+                }
 
                 GraphicsHandler.handler.ResetBoard();
             }
-            Move move = MovingHandler.MakeMove(ref Board.selectedPiece, Board.selectedSquare, ref Board.enPassantPiece, ref Board.enPassantSquare, ref Board.capturing, ref Board.capturedPiece, ref Board.board, ref Board.pieces, true);
 
-            if (move != null)
-                Board.lastMove = move;
+            if (Board.selectedPiece != null && Board.selectedSquare != null)
+            {
+                Move move = MovingHandler.MakeMove(Board.selectedPiece, Board.selectedSquare, true);
+                Board.selectedPiece = null;
+                Board.selectedSquare = null;
+
+                if (move != null)
+                    Board.lastMove = move;
+            }
+
         }
         if (Input.GetKeyDown(KeyCode.Space) && Board.lastMove != null)
         {
-            MovingHandler.ApplyMove(MovingHandler.UndoMove(Board.lastMove, true));
+            GraphicsHandler.handler.ResetBoard();
+            MovingHandler.UndoMove(Board.lastMove, true);
 
             Board.lastMove = null;
         }
         if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            GraphicsHandler.handler.ResetBoard();
             Essentials.ChangeTurn();
+        }
 
     }
 }

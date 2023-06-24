@@ -4,31 +4,31 @@ using UnityEngine;
 
 public static class Board
 {
-    public static Move lastMove = null;
-    public static HashSet<int[]> playerThreatMap;
-    public static HashSet<int[]> opponentThreatMap;
+    public static List<int[]> playerThreatMap;
+    public static List<int[]> opponentThreatMap;
     public static List<int[]> generatedMoves;
-    public static Dictionary<int[], Piece> board = new Dictionary<int[], Piece>();
     public static List<Piece> pieces = new List<Piece>();
     public static List<Piece> checkPieces = new List<Piece>();
+    public static Move lastMove = null;
 
     public static Piece whiteKing
     {
         get
         {
-            return pieces.FirstOrDefault(x => (x.type == (ChessPieceTypes.king | ChessPieceTypes.White)));
+            return pieces.FirstOrDefault(x => x.type == (ChessPieceTypes.king | ChessPieceTypes.White));
         }
     }
     public static Piece blackKing
     {
         get
         {
-            return pieces.FirstOrDefault(x => (x.type == (ChessPieceTypes.king | ChessPieceTypes.Black)));
+            return pieces.FirstOrDefault(x => x.type == (ChessPieceTypes.king | ChessPieceTypes.Black));
         }
     }
     public static Piece selectedPiece = null;
     public static Piece capturedPiece = null;
     public static Piece enPassantPiece = null;
+    public static Piece castlingRook = null;
 
     public static int[] selectedSquare = null;
     public static int[] enPassantSquare = null;
@@ -60,6 +60,43 @@ public class Piece
         this.type = type;
         this.position = position;
         this.moved = moved;
+    }
+}
+
+public class Move
+{
+    public Piece selectedPiece;
+    public int[] from;
+    public int[] to;
+    public bool moved;
+    public bool capturing;
+    public Piece capturedPiece;
+    public bool upgraded;
+    public Piece upgradedPiece;
+    public bool enPassant;
+    public int[] enPassantSquare;
+    public Piece enPassantPiece;
+    public bool castled;
+    public Piece castlingRook;
+    public List<Piece> pieces;
+    //public Dictionary<int[], Piece> board;
+
+    public Move(Piece selectedPiece, int[] from, int[] to, bool moved, bool capturing, Piece capturedPiece, bool upgraded, Piece upgradedPiece, bool enPassant, int[] enPassantSquare, Piece enPassantPiece, bool castled, Piece castlingRook/*, Dictionary<int[], Piece> board*/, List<Piece> pieces)
+    {
+        this.selectedPiece = selectedPiece;
+        this.from = from;
+        this.to = to;
+        this.moved = moved;
+        this.capturing = capturing;
+        this.capturedPiece = capturedPiece;
+        this.upgraded = upgraded;
+        this.upgradedPiece = upgradedPiece;
+        this.enPassant = enPassant;
+        this.enPassantSquare = enPassantSquare;
+        this.enPassantPiece = enPassantPiece;
+        this.castled = castled;
+        this.castlingRook = castlingRook;
+        this.pieces = pieces;
     }
 }
 
@@ -96,39 +133,5 @@ public class FENReading
         this.enPassantTS = enPassantTS;
         this.halfMoveC = halfMoveC;
         this.fullMoveC = fullMoveC;
-    }
-}
-
-public class Move
-{
-    public Piece selectedPiece;
-    public int[] from;
-    public int[] to;
-    public bool moved;
-    public bool capturing;
-    public Piece capturedPiece;
-    public bool upgraded;
-    public bool enPassant;
-    public int[] enPassantSquare;
-    public bool castled;
-    public Piece castlingRook;
-    public Dictionary<int[], Piece> board;
-    public List<Piece> pieces;
-
-    public Move(Piece selectedPiece, int[] from, int[] to, bool moved, bool capturing, Piece capturedPiece, bool upgraded, bool enPassant, int[] enPassantSquare, bool castled, Piece castlingRook, Dictionary<int[], Piece> board, List<Piece> pieces)
-    {
-        this.selectedPiece = selectedPiece;
-        this.from = from;
-        this.to = to;
-        this.moved = moved;
-        this.capturing = capturing;
-        this.capturedPiece = capturedPiece;
-        this.upgraded = upgraded;
-        this.enPassant = enPassant;
-        this.enPassantSquare = enPassantSquare;
-        this.castled = castled;
-        this.castlingRook = castlingRook;
-        this.board = board;
-        this.pieces = pieces;
     }
 }
