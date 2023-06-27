@@ -1,42 +1,32 @@
-using System.Linq;
-using System.Collections.Generic;
-using UnityEngine;
-using System.Collections;
-
-public class Bot : MonoBehaviour
+namespace Chess
 {
-    bool zeroMoves = false;
+    using System.Linq;
+    using System.Collections.Generic;
+    using UnityEngine;
 
-    IEnumerator Movement(float f)
+    public class Bot : MonoBehaviour
     {
-        while (true)
-        {
-            if (GraphicsHandler.handler.gameMode == GraphicsHandler.gameModes.PvP)
-                yield break;
-            else if (GraphicsHandler.handler.gameMode == GraphicsHandler.gameModes.PvB && Board.turnToMove != ChessPieceTypes.Black && !zeroMoves)
-                yield break;
+        bool zeroMoves = false;
 
-            yield return new WaitForSeconds(f);
+        void Update()
+        {
+            if (Board.gameEnded)
+                return;
+            if (Board.gameMode == GameModes.PvP)
+                return;
+            else if (Board.gameMode == GameModes.PvB && Board.turnToMove != ChessPieceTypes.Black && !zeroMoves)
+                return;
 
             Piece[] availablePieces = Board.pieces.FindAll(x => Essentials.CheckColor(x, Board.turnToMove)).ToArray();
             int[][][] allMoves = MovesGenerator.GenerateAllLegalMoves().ToArray();
 
-            int maxNumMoves = 0;
             List<int[]> listMoves = new List<int[]>();
             for (int i = 0; i < allMoves.GetLength(0); i++)
             {
-                if (allMoves[i].GetLength(0) > maxNumMoves)
-                    maxNumMoves = allMoves[i].GetLength(0);
                 for (int j = 0; j < allMoves[i].GetLength(0); j++)
                 {
                     listMoves.Add(allMoves[i][j]);
                 }
-            }
-
-            if (maxNumMoves == 0)
-            {
-                zeroMoves = true;
-                yield break;
             }
 
             int numPieces = allMoves.GetLength(0);
@@ -57,15 +47,12 @@ public class Bot : MonoBehaviour
             Board.capturedPiece = Board.capturing ? Board.pieces.FirstOrDefault(x => x.position.SequenceEqual(selectedMove)) : null;
 
             Board.generatedMoves = allMoves[randomPieceIndex].ToList();
-            Debug.Log("bot");
 
-            Move move = MovingHandler.MakeMove(Board.selectedPiece, Board.selectedSquare, true);
+            Board.lastMove = MovingHandler.MakeMove(Board.selectedPiece, Board.selectedSquare, true);
+            GameHandler.handler.UpdateUI();
+
+            GraphicsHandler.handler.ResetBoard(true);
+            GraphicsHandler.handler.HighlightMove(Board.lastMove.from, Board.lastMove.to);
         }
-    }
-
-    void Start()
-    {
-        var coroutine = Movement(.25f);
-        StartCoroutine(coroutine);
     }
 }

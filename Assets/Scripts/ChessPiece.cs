@@ -1,5 +1,6 @@
 using UnityEngine;
 
-public class ChessPiece : MonoBehaviour { 
-    public Piece identity;
+public class ChessPiece : MonoBehaviour
+{
+    public Chess.Piece identity;
 }
